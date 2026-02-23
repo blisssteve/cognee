@@ -73,6 +73,20 @@ Please refer to our documentation [here](https://docs.cognee.ai/how-to-guides/de
     ```
     LLM_API_KEY="YOUR_OPENAI_API_KEY"
     ```
+   
+   **Optional MCP-specific settings** (can also be added to .env):
+    ```bash
+    # Transport mode: stdio (default), sse, or http
+    TRANSPORT_MODE="sse"
+    
+    # API mode settings (connect to running Cognee API instead of direct mode)
+    API_URL="http://localhost:8000"
+    API_TOKEN="your_auth_token"
+    
+    # Server settings
+    HTTP_PORT="8000"
+    DEBUG_PORT="5678"
+    ```
 7. Run cognee mcp server with stdio (default)
     ```
     python src/server.py
@@ -95,7 +109,8 @@ To use different LLM providers / database configurations, and for more info chec
 If you'd rather run cognee-mcp in a container, you have two options:
 
 1. **Build locally**
-   1. Make sure you are in /cognee root directory and have a fresh `.env` containing only your `LLM_API_KEY` (and your chosen settings).
+   1. Make sure you are in /cognee root directory and have your `.env` containing `LLM_API_KEY` and any other settings.
+      You can include MCP-specific settings (`TRANSPORT_MODE`, `API_URL`, `API_TOKEN`) directly in the `.env` file.
    2. Remove any old image and rebuild:
       ```bash
       docker rmi cognee/cognee-mcp:main || true
@@ -103,7 +118,10 @@ If you'd rather run cognee-mcp in a container, you have two options:
       ```
    3. Run it:
       ```bash
-      # For HTTP transport (recommended for web deployments)
+      # All settings from .env (including TRANSPORT_MODE if set)
+      docker run --env-file ./.env -p 8000:8000 --rm -it cognee/cognee-mcp:main
+      
+      # Or override transport mode via -e flag
       docker run -e TRANSPORT_MODE=http --env-file ./.env -p 8000:8000 --rm -it cognee/cognee-mcp:main
       # For SSE transport
       docker run -e TRANSPORT_MODE=sse --env-file ./.env -p 8000:8000 --rm -it cognee/cognee-mcp:main

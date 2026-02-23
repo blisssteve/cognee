@@ -1,6 +1,19 @@
 #!/bin/bash
 
 set -e  # Exit on error
+
+# Source .env file if present (for standalone docker run with mounted .env)
+# This allows users to put MCP-specific vars (TRANSPORT_MODE, API_URL, API_TOKEN) 
+# in .env alongside cognee config, instead of passing them separately via -e flags.
+# Note: Docker's --env-file only passes vars to the container environment,
+# but those are already available. This handles mounted .env files.
+if [ -f "/app/.env" ]; then
+    echo "Loading environment from /app/.env"
+    set -a  # Export all variables
+    source /app/.env
+    set +a
+fi
+
 echo "Debug mode: $DEBUG"
 echo "Environment: $ENVIRONMENT"
 

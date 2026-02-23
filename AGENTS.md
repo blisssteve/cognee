@@ -128,3 +128,50 @@ MCP server and Frontend:
 ## CI Mirrors Local Commands
 
 Our GitHub Actions run the same ruff checks and pytest suites shown above (`.github/workflows/basic_tests.yml` and related workflows). Use the commands in this document locally to minimize CI surprises.
+
+## Agent Memory Management
+
+This repository includes an OpenCode plugin (`opencode-cognee/`) that provides persistent memory via Cognee knowledge graph. Agents should use this for session continuity.
+
+### Memory Workflow
+
+1. **Session Start**: Relevant memories are automatically injected
+2. **During Session**: Save important learnings, decisions, and preferences proactively
+3. **Context Filling**: Save key context before overflow, inform user they can `/clear`
+4. **Session End**: Session summaries are auto-saved
+
+### NodeSets for Organization
+
+| NodeSet | Purpose |
+|---------|---------|
+| `preferences` | User settings, coding style, tool preferences |
+| `decisions` | Architectural choices, trade-offs made |
+| `learnings` | Insights, patterns discovered, gotchas |
+| `projects` | Project-specific context |
+| `tools` | Tool configurations, MCP settings |
+
+### Quick Reference
+
+```bash
+# Save a preference
+cognee action:add content:"Steve prefers dark mode" tags:preferences
+
+# Save a decision
+cognee action:add content:"Chose PostgreSQL for ACID compliance" tags:decisions,database
+
+# Search memories
+cognee action:search query:"user preferences for UI"
+
+# Time-based search
+cognee action:timeline query:"what happened yesterday"
+```
+
+### When to Save
+
+- User says "remember this"
+- Making an architectural decision
+- Learning something that will be useful later
+- Context is ~70% full (save summary, inform user)
+
+For detailed instructions, load the `cognee-memory` skill.
+

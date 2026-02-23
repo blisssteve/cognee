@@ -8,6 +8,7 @@ from cognee.modules.data.processing.document_types import (
     TextDocument,
     UnstructuredDocument,
     CsvDocument,
+    DoclingDocument,
 )
 from cognee.modules.engine.models.node_set import NodeSet
 from cognee.modules.engine.utils.generate_node_id import generate_node_id
@@ -51,6 +52,7 @@ EXTENSION_TO_DOCUMENT_CLASS = {
     "wav": AudioDocument,
     "amr": AudioDocument,
     "aiff": AudioDocument,
+    "docling.json": DoclingDocument,  # Docling processed documents
 }
 
 

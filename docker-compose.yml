@@ -9,7 +9,10 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./cognee:/app/cognee
-      - .env:/app/.env
+      - ./data:/home/steve/cognee/data
+      - /home/steve:/home/steve
+    env_file:
+      - .env
     environment:
       - DEBUG=false # Change to true if debugging
       - HOST=0.0.0.0
@@ -32,35 +35,30 @@ services:
   # Cognee MCP Server - Model Context Protocol server for IDE integration
   cognee-mcp:
     container_name: cognee-mcp
-    profiles:
-      - mcp
+    # profiles:
+    #   - mcp
     networks:
       - cognee-network
     build:
       context: .
       dockerfile: cognee-mcp/Dockerfile
     volumes:
-      - .env:/app/.env
+      - ./cognee-mcp/src:/app/src  # Live code reloading
+      - ./cognee:/app/.venv/lib/python3.12/site-packages/cognee  # Override installed cognee with local source
+      - ./data:/home/steve/cognee/data
+      - /home/steve:/home/steve
+    env_file:
+      - .env
     environment:
-      - DEBUG=false # Change to true if debugging
-      - ENVIRONMENT=local
-      - LOG_LEVEL=INFO
-      - TRANSPORT_MODE=sse
-      # Database configuration - should match the main cognee service
-      - DB_PROVIDER=${DB_PROVIDER:-sqlite}
-      - DB_HOST=${DB_HOST:-host.docker.internal}
-      - DB_PORT=${DB_PORT:-5432}
-      - DB_NAME=${DB_NAME:-cognee_db}
-      - DB_USERNAME=${DB_USERNAME:-cognee}
-      - DB_PASSWORD=${DB_PASSWORD:-cognee}
-      # MCP specific configuration
+      # MCP specific overrides
+      - TRANSPORT_MODE=http
       - MCP_LOG_LEVEL=INFO
       - PYTHONUNBUFFERED=1
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "8000:8000" # MCP port
-      - "5678:5678" # MCP debugger port
+      - "8003:8000" # MCP port
+      - "5679:5678" # MCP debugger port
     deploy:
       resources:
         limits:
@@ -74,14 +72,15 @@ services:
     restart: always
     environment:
       - NEXT_PUBLIC_BACKEND_API_URL=${NEXT_PUBLIC_BACKEND_API_URL:-http://localhost:8000}
-    profiles:
-        - ui
+    # profiles:
+    #     - ui
     build:
       context: ./cognee-frontend
       dockerfile: Dockerfile
     volumes:
       - ./cognee-frontend/src:/app/src
       - ./cognee-frontend/public:/app/public
+      - ./cognee-frontend/.env:/app/.env
     ports:
       - 3000:3000
       # - 9229:9229 # Debugging
@@ -92,14 +91,62 @@ services:
     image: neo4j:latest
     container_name: neo4j
     restart: always
-    profiles:
-      - neo4j
+    # profiles:
+    #   - neo4j
     ports:
       - 7474:7474
       - 7687:7687
     environment:
       - NEO4J_AUTH=neo4j/pleaseletmein
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - cognee-network
+
+  # Neo4j MCP Cypher Server - Execute Cypher queries via MCP
+  mcp-neo4j-cypher:
+    image: mcp/neo4j-cypher:latest
+    container_name: mcp-neo4j-cypher
+    # profiles:
+    #   - neo4j
+    ports:
+      - "8010:8000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USERNAME=neo4j
+      - NEO4J_PASSWORD=pleaseletmein
+      - NEO4J_DATABASE=neo4j
+      - NEO4J_TRANSPORT=http
+      - NEO4J_MCP_SERVER_HOST=0.0.0.0
+      - NEO4J_MCP_SERVER_PORT=8000
+      - NEO4J_MCP_SERVER_PATH=/api/mcp/
+      - NEO4J_NAMESPACE=cognee
+      - NEO4J_MCP_SERVER_ALLOWED_HOSTS=localhost,127.0.0.1,host.docker.internal
+      - NEO4J_READ_TIMEOUT=30
+      - NEO4J_SCHEMA_SAMPLE_SIZE=1000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - neo4j
+    networks:
+      - cognee-network
+
+  # Neo4j MCP Data Modeling Server - Graph data modeling via MCP
+  mcp-neo4j-data-modeling:
+    image: mcp/neo4j-data-modeling:latest
+    container_name: mcp-neo4j-data-modeling
+    # profiles:
+    #   - neo4j
+    ports:
+      - "8011:8000"
+    environment:
+      - NEO4J_TRANSPORT=http
+      - NEO4J_MCP_SERVER_HOST=0.0.0.0
+      - NEO4J_MCP_SERVER_PORT=8000
+      - NEO4J_MCP_SERVER_PATH=/mcp/
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - cognee-network
 
@@ -126,13 +173,14 @@ services:
     image: pgvector/pgvector:pg17
     container_name: postgres
     restart: always
-    profiles:
-      - postgres
+    # profiles:
+    #   - postgres
     environment:
       POSTGRES_USER: cognee
       POSTGRES_PASSWORD: cognee
       POSTGRES_DB: cognee_db
-      # - postgres_data:/var/lib/postgresql/data
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - 5432:5432
     networks:
@@ -141,8 +189,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis
-    profiles:
-      - redis
+    # profiles:
+    #   - redis
     ports:
       - "6379:6379"
     networks:
@@ -161,6 +209,34 @@ services:
     networks:
       - cognee-network
 
+  # Docling Serve + MCP Server - Combined container for document processing
+  # Runs both the API server (port 5001) and MCP server (port 8000)
+  docling-serve:
+    image: ghcr.io/docling-project/docling-serve-cu128:main
+    container_name: docling-serve
+    ports:
+      - "5001:5001"   # Docling Serve API
+      - "8012:8000"   # Docling MCP Server
+    environment:
+      - DOCLING_SERVE_ENABLE_UI=1
+      - DOCLING_MCP_CACHE_DIR=/data/docling_cache
+    volumes:
+      - /home/steve/cognee/data/docling_cache:/data/docling_cache
+    # Start both docling-serve (background) and docling-mcp-server (foreground)
+    command: >
+      sh -c "docling-serve run --host 0.0.0.0 --port 5001 --enable-ui &
+             docling-mcp-server --transport streamable-http --port 8000 --host 0.0.0.0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    networks:
+      - cognee-network
+    restart: unless-stopped
+
 
 networks:
   cognee-network:
@@ -170,3 +246,4 @@ volumes:
   chromadb_data:
   postgres_data:
   redis_data:
+  neo4j_data:

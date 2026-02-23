@@ -35,7 +35,10 @@ async def save_data_item_to_storage(data_item: Union[BinaryIO, str, Any]) -> str
         from docling_core.types import DoclingDocument
 
         if isinstance(data_item, DoclingDocument):
-            data_item = data_item.export_to_text()
+            # Save as JSON to preserve rich structure (images, tables, etc.)
+            import json
+            docling_json = data_item.model_dump_json()
+            return await save_data_to_file(docling_json, file_extension="docling.json")
 
     # data is a file object coming from upload.
     if hasattr(data_item, "file"):

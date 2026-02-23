@@ -72,10 +72,23 @@ class CogneeClient:
         Dict[str, Any]
             Result of the add operation
         """
+        # If data is a file path, read the file content
+        content = str(data)
+        if isinstance(data, str) and len(data) < 500:  # Likely a path, not content
+            import os
+            if os.path.isfile(data):
+                try:
+                    with open(data, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    logger.info(f"Read file content from: {data} ({len(content)} chars)")
+                except Exception as e:
+                    logger.warning(f"Could not read file {data}: {e}, using path as content")
+                    content = str(data)
+        
         if self.use_api:
             endpoint = f"{self.api_url}/api/v1/add"
 
-            files = {"data": ("data.txt", str(data), "text/plain")}
+            files = {"data": ("data.txt", content, "text/plain")}
             form_data = {
                 "datasetName": dataset_name,
             }
@@ -92,6 +105,7 @@ class CogneeClient:
             return response.json()
         else:
             with redirect_stdout(sys.stderr):
+                # In direct mode, pass file path or content appropriately
                 await self.cognee.add(data, dataset_name=dataset_name, node_set=node_set)
                 return {"status": "success", "message": "Data added successfully"}
 

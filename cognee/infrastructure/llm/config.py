@@ -56,6 +56,9 @@ class LLMConfig(BaseSettings):
     baml_llm_api_version: str = ""
 
     transcription_model: str = "whisper-1"
+    vision_model: str = ""  # Optional vision model for image transcription
+    vision_endpoint: str = ""  # Optional endpoint for vision model (if different from main endpoint)
+    vision_api_key: str = ""  # Optional API key for vision model (if different from main LLM key)
     graph_prompt_path: str = "generate_graph_prompt.txt"
     temporal_graph_prompt_path: str = "generate_event_graph_prompt.txt"
     event_entity_prompt_path: str = "generate_event_entity_prompt.txt"

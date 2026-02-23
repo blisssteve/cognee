@@ -106,6 +106,9 @@ def get_llm_client(raise_api_key_error: bool = True):
             "Ollama",
             max_completion_tokens,
             instructor_mode=llm_config.llm_instructor_mode.lower(),
+            vision_model=llm_config.vision_model,
+            vision_endpoint=llm_config.vision_endpoint,
+            vision_api_key=llm_config.vision_api_key,
         )
 
     elif provider == LLMProvider.ANTHROPIC:
@@ -137,6 +140,9 @@ def get_llm_client(raise_api_key_error: bool = True):
             fallback_api_key=llm_config.fallback_api_key,
             fallback_endpoint=llm_config.fallback_endpoint,
             fallback_model=llm_config.fallback_model,
+            vision_model=llm_config.vision_model,
+            vision_endpoint=llm_config.vision_endpoint,
+            vision_api_key=llm_config.vision_api_key,
         )
 
     elif provider == LLMProvider.GEMINI:

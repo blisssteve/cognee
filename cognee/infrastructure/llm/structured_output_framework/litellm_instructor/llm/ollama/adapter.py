@@ -53,12 +53,18 @@ class OllamaAPIAdapter(LLMInterface):
         name: str,
         max_completion_tokens: int,
         instructor_mode: str = None,
+        vision_model: str = None,
+        vision_endpoint: str = None,
+        vision_api_key: str = None,
     ):
         self.name = name
         self.model = model
         self.api_key = api_key
         self.endpoint = endpoint
         self.max_completion_tokens = max_completion_tokens
+        self.vision_model = vision_model if vision_model else model
+        self.vision_endpoint = vision_endpoint if vision_endpoint else endpoint
+        self.vision_api_key = vision_api_key if vision_api_key else api_key
 
         self.instructor_mode = instructor_mode if instructor_mode else self.default_instructor_mode
 
@@ -165,10 +171,9 @@ class OllamaAPIAdapter(LLMInterface):
         """
         Transcribe content from an image using base64 encoding.
 
-        This synchronous method takes an input image file, encodes it as base64, and returns the
-        transcription of its content. Raises a FileNotFoundError if the input file does not
-        exist, and raises a ValueError if the transcription fails or no valid response is
-        received.
+        When a separate vision model is configured (e.g. on OpenRouter), this method
+        routes through litellm to the external vision API instead of local Ollama.
+        Falls back to local Ollama if no separate vision model is set.
 
         Parameters:
         -----------
@@ -184,25 +189,27 @@ class OllamaAPIAdapter(LLMInterface):
         async with open_data_file(input, mode="rb") as image_file:
             encoded_image = base64.b64encode(image_file.read()).decode("utf-8")
 
-        response = self.aclient.chat.completions.create(
-            model=self.model,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": "What's in this image?"},
-                        {
-                            "type": "image_url",
-                            "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"},
-                        },
-                    ],
-                }
-            ],
-            max_completion_tokens=300,
-        )
-
-        # Ensure response is valid before accessing .choices[0].message.content
-        if not hasattr(response, "choices") or not response.choices:
-            raise ValueError("Image transcription failed. No response received.")
+        # Use litellm for external vision model (e.g. OpenRouter)
+        # This avoids calling local Ollama for vision when a separate vision API is configured
+        async with llm_rate_limiter_context_manager():
+            response = await litellm.acompletion(
+                model=self.vision_model,
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "text", "text": "What's in this image?"},
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{encoded_image}"},
+                            },
+                        ],
+                    }
+                ],
+                api_key=self.vision_api_key,
+                api_base=self.vision_endpoint,
+                max_tokens=300,
+                **kwargs,
+            )
 
         return response.choices[0].message.content

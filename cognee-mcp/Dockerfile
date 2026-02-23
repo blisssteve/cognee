@@ -26,12 +26,12 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy pyproject.toml and lockfile first for better caching
-COPY ./cognee-mcp/pyproject.toml ./cognee-mcp/uv.lock ./cognee-mcp/entrypoint.sh ./
+# Copy pyproject.toml and entrypoint first for better caching
+COPY ./cognee-mcp/pyproject.toml ./cognee-mcp/entrypoint.sh ./
 
-# Install the project's dependencies using the lockfile and settings
+# Install the project's dependencies (without frozen to allow local file ref)
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-install-project --no-dev --no-editable
+    uv sync --no-install-project --no-dev --no-editable
 
 # Copy Alembic configuration
 COPY cognee/alembic.ini /app/cognee/alembic.ini
@@ -41,7 +41,7 @@ COPY cognee/alembic/ /app/cognee/alembic
 # Installing separately from its dependencies allows optimal layer caching
 COPY ./cognee-mcp /app
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable
+    uv sync --no-dev --no-editable
 
 FROM python:3.12-slim-bookworm
 

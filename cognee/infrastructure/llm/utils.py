@@ -60,7 +60,9 @@ def get_model_max_completion_tokens(model_name: str):
     max_completion_tokens = None
 
     if model_name in litellm.model_cost:
-        max_completion_tokens = litellm.model_cost[model_name]["max_tokens"]
+        model_info = litellm.model_cost[model_name]
+        # Some models use "max_tokens", others use "max_output_tokens"
+        max_completion_tokens = model_info.get("max_tokens") or model_info.get("max_output_tokens")
         logger.debug(f"Max input tokens for {model_name}: {max_completion_tokens}")
     else:
         logger.debug("Model not found in LiteLLM's model_cost.")

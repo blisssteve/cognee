@@ -22,6 +22,8 @@ export default function InstanceDatasetsAccordion({ onDatasetsChange }: Instance
     setTrue: setCloudCogneeConnected,
   } = useBoolean(isCloudEnvironment());
 
+  const isCloudEnv = isCloudEnvironment();
+
   const checkConnectionToCloudCognee = useCallback((apiKey?: string) => {
       if (apiKey) {
         fetch.setApiKey(apiKey);
@@ -38,8 +40,10 @@ export default function InstanceDatasetsAccordion({ onDatasetsChange }: Instance
     };
 
     checkConnectionToLocalCognee();
-    checkConnectionToCloudCognee();
-  }, [checkConnectionToCloudCognee, setCloudCogneeConnected, setLocalCogneeConnected]);
+    if (isCloudEnv) {
+      checkConnectionToCloudCognee();
+    }
+  }, [checkConnectionToCloudCognee, isCloudEnv, setLocalCogneeConnected]);
 
   const {
     value: isCloudConnectedModalOpen,
@@ -57,8 +61,6 @@ export default function InstanceDatasetsAccordion({ onDatasetsChange }: Instance
         closeCloudConnectionModal();
       });
   };
-
-  const isCloudEnv = isCloudEnvironment();
 
   return (
     <div className={classNames("flex flex-col", {

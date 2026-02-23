@@ -124,20 +124,32 @@ class LiteLLMEmbeddingEngine(EmbeddingEngine):
             - List[List[float]]: A list of vectors representing the embedded texts.
         """
         try:
+            # Filter out empty strings - Gemini and other providers return errors for empty text
+            non_empty_text = [t for t in text if t and t.strip()]
+            if not non_empty_text:
+                logger.warning("All input texts are empty, returning zero vectors")
+                return [[0.0] * self.dimensions for _ in text]
+
+            # Track which indices had non-empty text
+            non_empty_indices = [i for i, t in enumerate(text) if t and t.strip()]
+
             if self.mock:
-                response = {"data": [{"embedding": [0.0] * self.dimensions} for _ in text]}
-                return [data["embedding"] for data in response["data"]]
+                response = {"data": [{"embedding": [0.0] * self.dimensions} for _ in non_empty_text]}
+                embeddings = [data["embedding"] for data in response["data"]]
             else:
                 async with embedding_rate_limiter_context_manager():
                     embedding_kwargs = {
                         "model": self.model,
-                        "input": text,
+                        "input": non_empty_text,
                         "api_key": self.api_key,
                         "api_base": self.endpoint,
                         "api_version": self.api_version,
                     }
-                    # Pass through target embedding dimensions when supported
-                    if self.dimensions is not None:
+                    # Pass through target embedding dimensions when supported.
+                    # Skip for custom endpoints – the server already knows its
+                    # output size and litellm may reject the param for certain
+                    # model-name prefixes (e.g. "openai/…").
+                    if self.dimensions is not None and not self.endpoint:
                         embedding_kwargs["dimensions"] = self.dimensions
 
                     # Ensure each attempt does not hang indefinitely
@@ -146,7 +158,13 @@ class LiteLLMEmbeddingEngine(EmbeddingEngine):
                         timeout=30.0,
                     )
 
-                return [data["embedding"] for data in response.data]
+                embeddings = [data["embedding"] for data in response.data]
+
+            # Reconstruct result with zero vectors for empty inputs
+            result = [[0.0] * self.dimensions for _ in text]
+            for idx, emb in zip(non_empty_indices, embeddings):
+                result[idx] = emb
+            return result
 
         except litellm.exceptions.ContextWindowExceededError as error:
             if isinstance(text, list) and len(text) > 1:

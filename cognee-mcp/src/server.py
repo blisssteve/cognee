@@ -92,6 +92,85 @@ async def health_check(request):
 
 
 @mcp.tool()
+async def cognee_add_developer_rules(
+    base_path: str = ".", graph_model_file: str = None, graph_model_name: str = None
+) -> list:
+    """
+    Ingest core developer rule files into Cognee's memory layer.
+
+    This function loads a predefined set of developer-related configuration,
+    rule, and documentation files from the base repository and assigns them
+    to the special 'developer_rules' node set in Cognee.
+
+    Parameters
+    ----------
+    base_path : str
+        Root path to resolve relative file paths. Defaults to current directory.
+
+    graph_model_file : str, optional
+        Optional path to a custom schema file for knowledge graph generation.
+
+    graph_model_name : str, optional
+        Optional class name to use from the graph_model_file schema.
+
+    Returns
+    -------
+    list
+        A message indicating how many rule files were scheduled for ingestion.
+    """
+    developer_rule_paths = [
+        ".cursorrules",
+        ".cursor/rules",
+        ".same/todos.md",
+        ".windsurfrules",
+        ".clinerules",
+        "CLAUDE.md",
+        ".sourcegraph/memory.md",
+        "AGENT.md",
+        "AGENTS.md",
+    ]
+
+    async def cognify_task(file_path: str) -> None:
+        with redirect_stdout(sys.stderr):
+            logger.info(f"Starting cognify for: {file_path}")
+            try:
+                await cognee_client.add(file_path, node_set=["developer_rules"])
+
+                model = None
+                if graph_model_file and graph_model_name:
+                    if cognee_client.use_api:
+                        logger.warning("Custom graph models are not supported in API mode, ignoring.")
+                    else:
+                        model = load_class(graph_model_file, graph_model_name)
+
+                await cognee_client.cognify(graph_model=model)
+                logger.info(f"Cognify finished for: {file_path}")
+            except Exception as e:
+                logger.error(f"Cognify failed for {file_path}: {str(e)}")
+                raise ValueError(f"Failed to cognify: {str(e)}")
+
+    tasks = []
+    for rel_path in developer_rule_paths:
+        abs_path = os.path.join(base_path, rel_path)
+        if os.path.isfile(abs_path):
+            tasks.append(asyncio.create_task(cognify_task(abs_path)))
+        else:
+            logger.warning(f"Skipped missing developer rule file: {abs_path}")
+
+    log_file = get_log_file_location()
+    return [
+        types.TextContent(
+            type="text",
+            text=(
+                f"Started cognify for {len(tasks)} developer rule files in background.\n"
+                f"All are added to the `developer_rules` node set.\n"
+                f"Use `cognify_status` or check logs at {log_file} to monitor progress."
+            ),
+        )
+    ]
+
+
+@mcp.tool()
 @log_usage(function_name="MCP cognify", log_type="mcp_tool")
 async def cognify(
     data: str, graph_model_file: str = None, graph_model_name: str = None, custom_prompt: str = None
@@ -786,6 +865,26 @@ async def cognify_status():
             error_msg = f"❌ Failed to get cognify status: {str(e)}"
             logger.error(error_msg)
             return [types.TextContent(type="text", text=error_msg)]
+
+
+@mcp.tool()
+async def get_developer_rules() -> list:
+    """
+    Retrieve all developer rules that were generated based on previous interactions.
+
+    Returns a list of developer rules extracted from coding interactions.
+    """
+    async def fetch_rules_from_cognee() -> str:
+        with redirect_stdout(sys.stderr):
+            if cognee_client.use_api:
+                logger.warning("Developer rules retrieval is not available in API mode")
+                return "Developer rules retrieval is not available in API mode"
+
+            developer_rules = await get_existing_rules(rules_nodeset_name="coding_agent_rules")
+            return developer_rules
+
+    rules_text = await fetch_rules_from_cognee()
+    return [types.TextContent(type="text", text=rules_text)]
 
 
 def node_to_string(node):
