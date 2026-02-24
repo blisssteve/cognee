@@ -1,0 +1,26 @@
+{
+  "name": "gemini-cognee",
+  "version": "1.0.0",
+  "description": "Cognee memory extension for Gemini CLI",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "test": "node src/server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "zod": "^3.23.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "gemini-cli",
+    "extension",
+    "cognee",
+    "memory",
+    "knowledge-graph"
+  ],
+  "author": "Cognee Team",
+  "license": "Apache-2.0"
+}

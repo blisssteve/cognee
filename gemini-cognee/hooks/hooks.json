@@ -1,0 +1,44 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "name": "cognee-init",
+            "type": "command",
+            "command": "node ${extensionPath}/scripts/session-start.js",
+            "description": "Initialize Cognee memory and inject relevant context"
+          }
+        ]
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "cognee-memory-inject",
+            "type": "command",
+            "command": "node ${extensionPath}/scripts/before-agent.js",
+            "description": "Search and inject relevant memories for user prompt",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "exit",
+        "hooks": [
+          {
+            "name": "cognee-save-session",
+            "type": "command",
+            "command": "node ${extensionPath}/scripts/session-end.js",
+            "description": "Save session summary to Cognee memory"
+          }
+        ]
+      }
+    ]
+  }
+}

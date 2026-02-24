@@ -1,0 +1,38 @@
+{
+  "name": "opencode-cognee",
+  "version": "0.1.0",
+  "description": "Integrate Cognee as a persistent memory backend for OpenCode",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target node",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "cognee",
+    "memory",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@opencode-ai/plugin": "^1.0.162"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "opencode": {
+    "type": "plugin",
+    "hooks": ["chat.message", "event"]
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}

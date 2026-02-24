@@ -215,7 +215,6 @@ scripts/personal/*
 # AI Assistant configs & backups
 .claude/
 .gemini/
-gemini-cognee/
 .env.backup*
 *.env.old
 

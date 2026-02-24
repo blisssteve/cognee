@@ -1,0 +1,11 @@
+{
+  "cogneeUrl": "http://localhost:8003",
+  "similarityThreshold": 0.7,
+  "maxMemories": 5,
+  "keywordPatterns": [
+    "remember",
+    "note",
+    "save this",
+    "important"
+  ]
+}

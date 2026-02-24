@@ -1,0 +1,26 @@
+{
+  "name": "gemini-cognee",
+  "version": "1.0.0",
+  "description": "Persistent memory for Gemini CLI via Cognee knowledge graph. Automatically saves sessions and injects relevant context.",
+  "mcpServers": {
+    "cognee": {
+      "command": "node",
+      "args": ["${extensionPath}${/}src${/}server.js"],
+      "cwd": "${extensionPath}"
+    }
+  },
+  "contextFileName": "GEMINI.md",
+  "settings": [
+    {
+      "name": "Cognee URL",
+      "description": "URL of your Cognee server (e.g., http://localhost:8000)",
+      "envVar": "COGNEE_URL"
+    },
+    {
+      "name": "Cognee API Token",
+      "description": "Optional API token for authenticated Cognee instances",
+      "envVar": "COGNEE_API_TOKEN",
+      "sensitive": true
+    }
+  ]
+}
