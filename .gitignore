@@ -211,3 +211,13 @@ data/
 # Personal Scripts
 scripts/personal/*
 !scripts/personal/.gitkeep
+
+# AI Assistant configs & backups
+.claude/
+.gemini/
+gemini-cognee/
+.env.backup*
+*.env.old
+
+# Custom directories
+veterinary/
