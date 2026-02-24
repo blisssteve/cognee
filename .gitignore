@@ -206,3 +206,4 @@ SWE-bench_testsample/
 deployment/helm/values-local.yml
 *.pdf
 *.pdf:Zone.Identifier
+data/
