@@ -42,13 +42,10 @@ services:
     build:
       context: .
       dockerfile: cognee-mcp/Dockerfile
+    command: --no-migration
     volumes:
-      - ./cognee-mcp/src:/app/src  # Live code reloading
-      - ./cognee:/app/.venv/lib/python3.12/site-packages/cognee  # Override installed cognee with local source
-      - ./data:/home/steve/cognee/data
-      - /home/steve:/home/steve
-    env_file:
-      - .env
+      - .env:/app/.env
+      - ./cognee:/app/cognee
     environment:
       # MCP specific overrides
       - TRANSPORT_MODE=http

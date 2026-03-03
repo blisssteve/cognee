@@ -16,29 +16,15 @@ ARG DEBUG
 # Set environment variable based on the build argument
 ENV DEBUG=${DEBUG}
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    libpq-dev \
-    git \
-    curl \
-    clang \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy pyproject.toml and entrypoint first for better caching
-COPY ./cognee-mcp/pyproject.toml ./cognee-mcp/entrypoint.sh ./
+# Copy pyproject.toml and lockfile first for better caching
+COPY ./cognee-mcp/pyproject.toml ./cognee-mcp/uv.lock ./cognee-mcp/entrypoint.sh ./
 
 # Install the project's dependencies (without frozen to allow local file ref)
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-install-project --no-dev --no-editable
 
-# Copy Alembic configuration
-COPY cognee/alembic.ini /app/cognee/alembic.ini
-COPY cognee/alembic/ /app/cognee/alembic
-
 # Then, add the rest of the project source code and install it
-# Installing separately from its dependencies allows optimal layer caching
+# Installing separately from its dependencies allows layer caching
 COPY ./cognee-mcp /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --no-dev --no-editable
