@@ -367,7 +367,7 @@ async def save_interaction(data: str) -> list:
                 await cognee_client.cognify()
 
                 user = await get_default_user()
-                datasets = await get_datasets_by_name("main_dataset", user_id=user.id)
+                datasets = await get_datasets_by_name("steve_coding", user_id=user.id)
                 dataset = datasets[0]
                 added_data = await get_last_added_data(dataset.id)
 
@@ -847,7 +847,7 @@ async def cognify_status():
     Get the current status of the cognify pipeline.
 
     This function retrieves information about current and recently completed cognify operations
-    in the main_dataset. It provides details on progress, success/failure status, and statistics
+    in the steve_coding dataset. It provides details on progress, success/failure status, and statistics
     about the processed data.
 
     Returns
@@ -858,7 +858,7 @@ async def cognify_status():
 
     Notes
     -----
-    - The function retrieves pipeline status specifically for the "cognify_pipeline" on the "main_dataset"
+    - The function retrieves pipeline status specifically for the "cognify_pipeline" on the "steve_coding" dataset
     - Status information includes job progress, execution time, and completion status
     - The status is returned in string format for easy reading
     - This operation is not available in API mode
@@ -870,7 +870,7 @@ async def cognify_status():
 
             user = await get_default_user()
             status = await cognee_client.get_pipeline_status(
-                [await get_unique_dataset_id("main_dataset", user)], "cognify_pipeline"
+                [await get_unique_dataset_id("steve_coding", user)], "cognify_pipeline"
             )
             return [types.TextContent(type="text", text=str(status))]
         except NotImplementedError:

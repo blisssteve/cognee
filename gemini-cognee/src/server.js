@@ -31,18 +31,18 @@ async function cogneeRequest(endpoint, options = {}) {
   };
 
   const url = `${COGNEE_URL}${endpoint}`;
-  
+
   try {
     const response = await fetch(url, {
       ...options,
       headers,
     });
-    
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Cognee API error (${response.status}): ${errorText}`);
     }
-    
+
     return await response.json();
   } catch (error) {
     if (error.cause?.code === 'ECONNREFUSED') {
@@ -67,12 +67,12 @@ async function healthCheck() {
 /**
  * Add content to Cognee with optional NodeSet tags
  */
-async function addMemory(content, datasetName = config.datasetName || 'default_user', nodeSets = []) {
+async function addMemory(content, datasetName = config.datasetName || 'steve_coding', nodeSets = []) {
   const formData = new FormData();
   const blob = new Blob([content], { type: 'text/plain' });
   formData.append('data', blob, 'memory.txt');
   formData.append('datasetName', datasetName);
-  
+
   for (const nodeSet of nodeSets) {
     formData.append('node_set', nodeSet);
   }
@@ -91,14 +91,14 @@ async function addMemory(content, datasetName = config.datasetName || 'default_u
   if (!response.ok) {
     throw new Error(`Failed to add memory: ${response.status}`);
   }
-  
+
   return { success: true };
 }
 
 /**
  * Trigger cognify to process into knowledge graph
  */
-async function cognify(datasetName = config.datasetName || 'default_user', temporalCognify = true) {
+async function cognify(datasetName = config.datasetName || 'steve_coding', temporalCognify = true) {
   return cogneeRequest('/api/v1/cognify', {
     method: 'POST',
     body: JSON.stringify({
@@ -117,7 +117,7 @@ async function searchMemories(query, searchType = 'GRAPH_COMPLETION', topK = 10,
     search_type: searchType,
     top_k: topK,
   };
-  
+
   if (sessionId) {
     body.session_id = sessionId;
   }
@@ -134,11 +134,11 @@ async function searchMemories(query, searchType = 'GRAPH_COMPLETION', topK = 10,
       return { content: item.content || item.text || item.result || JSON.stringify(item) };
     });
   }
-  
+
   if (result.results) {
     return searchMemories(result.results);
   }
-  
+
   return [{ content: String(result) }];
 }
 
@@ -187,7 +187,7 @@ Examples:
   },
   async (args) => {
     const action = args.action || 'help';
-    
+
     try {
       switch (action) {
         case 'help': {
@@ -259,7 +259,7 @@ Examples:
           const searchType = args.searchType || 'GRAPH_COMPLETION';
           const topK = args.topK || 10;
           const results = await searchMemories(args.query, searchType, topK);
-          
+
           return {
             content: [{
               type: 'text',
@@ -285,7 +285,7 @@ Examples:
           }
 
           const results = await searchMemories(args.query, 'TEMPORAL', 15);
-          
+
           return {
             content: [{
               type: 'text',
@@ -310,7 +310,7 @@ Examples:
             };
           }
 
-          const nodeSets = args.tags 
+          const nodeSets = args.tags
             ? args.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
             : ['user_memories'];
 
@@ -331,7 +331,7 @@ Examples:
 
         case 'list': {
           const datasets = await listDatasets();
-          
+
           return {
             content: [{
               type: 'text',
@@ -359,7 +359,7 @@ Examples:
           text: JSON.stringify({
             success: false,
             error: error.message,
-            hint: error.message.includes('unavailable') 
+            hint: error.message.includes('unavailable')
               ? 'Start Cognee with: uv run python -m cognee.api.client'
               : undefined,
           }, null, 2),

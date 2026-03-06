@@ -53,7 +53,7 @@ class CogneeClient:
         return headers
 
     async def add(
-        self, data: Any, dataset_name: str = "main_dataset", node_set: Optional[List[str]] = None
+        self, data: Any, dataset_name: str = "steve_coding", node_set: Optional[List[str]] = None
     ) -> Dict[str, Any]:
         """
         Add data to Cognee for processing.
@@ -136,7 +136,7 @@ class CogneeClient:
             # API mode: Make HTTP request
             endpoint = f"{self.api_url}/api/v1/cognify"
             payload = {
-                "datasets": datasets or ["main_dataset"],
+                "datasets": datasets or ["steve_coding"],
                 "run_in_background": False,
             }
             if custom_prompt:

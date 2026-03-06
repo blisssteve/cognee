@@ -19,7 +19,11 @@ class TikTokenTokenizer(TokenizerInterface):
         self.max_completion_tokens = max_completion_tokens
         # Initialize TikToken for GPT based on model
         if model:
-            self.tokenizer = tiktoken.encoding_for_model(self.model)
+            try:
+                self.tokenizer = tiktoken.encoding_for_model(self.model)
+            except KeyError:
+                # Use default if model not recognized by tiktoken
+                self.tokenizer = tiktoken.get_encoding("cl100k_base")
         else:
             # Use default if model not provided
             self.tokenizer = tiktoken.get_encoding("cl100k_base")

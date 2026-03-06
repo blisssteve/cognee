@@ -24,8 +24,8 @@ services:
       # Allows the container to reach your local machine using "host.docker.internal" instead of "localhost"
       - "host.docker.internal:host-gateway"
     ports:
-      - 8000:8000
-      - 5678:5678 # Debugger port
+      - "127.0.0.1:8000:8000"
+      - "127.0.0.1:5678:5678" # Debugger port
     deploy:
       resources:
         limits:
@@ -54,8 +54,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - "8003:8000" # MCP port
-      - "5679:5678" # MCP debugger port
+      - "127.0.0.1:8003:8000" # MCP port
+      - "127.0.0.1:5679:5678" # MCP debugger port
     deploy:
       resources:
         limits:
@@ -79,7 +79,7 @@ services:
       - ./cognee-frontend/public:/app/public
       - ./cognee-frontend/.env:/app/.env
     ports:
-      - 3000:3000
+      - "127.0.0.1:3000:3000"
       # - 9229:9229 # Debugging
     networks:
       - cognee-network
@@ -91,8 +91,8 @@ services:
     # profiles:
     #   - neo4j
     ports:
-      - 7474:7474
-      - 7687:7687
+      - "127.0.0.1:7474:7474"
+      - "127.0.0.1:7687:7687"
     environment:
       - NEO4J_AUTH=neo4j/pleaseletmein
       - NEO4J_PLUGINS=["apoc", "graph-data-science"]
@@ -108,7 +108,7 @@ services:
     # profiles:
     #   - neo4j
     ports:
-      - "8010:8000"
+      - "127.0.0.1:8010:8000"
     environment:
       - NEO4J_URI=bolt://neo4j:7687
       - NEO4J_USERNAME=neo4j
@@ -136,7 +136,7 @@ services:
     # profiles:
     #   - neo4j
     ports:
-      - "8011:8000"
+      - "127.0.0.1:8011:8000"
     environment:
       - NEO4J_TRANSPORT=http
       - NEO4J_MCP_SERVER_HOST=0.0.0.0
@@ -164,7 +164,7 @@ services:
     networks:
       - cognee-network
     ports:
-      - "3002:8000"
+      - "127.0.0.1:3002:8000"
 
   postgres:
     image: pgvector/pgvector:pg17
@@ -179,7 +179,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - 5432:5432
+      - "127.0.0.1:5432:5432"
     networks:
       - cognee-network
 
@@ -189,7 +189,7 @@ services:
     # profiles:
     #   - redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     networks:
       - cognee-network
     volumes:
@@ -202,7 +202,7 @@ services:
     container_name: redisinsight
     restart: always
     ports:
-      - "5540:5540"
+      - "127.0.0.1:5540:5540"
     networks:
       - cognee-network
 

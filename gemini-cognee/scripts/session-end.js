@@ -16,7 +16,7 @@ const __dirname = dirname(__filename);
 // Load config
 let config = {
   cogneeUrl: 'http://localhost:8000',
-  datasetName: 'default_user',  // Shared dataset name
+  datasetName: 'steve_coding',  // Shared dataset name
 };
 
 try {
@@ -34,15 +34,15 @@ const COGNEE_API_TOKEN = process.env.COGNEE_API_TOKEN;
 async function main() {
   const input = JSON.parse(readFileSync(0, 'utf-8'));
   const { reason, session_id, transcript_path } = input;
-  
+
   console.error(`[cognee] Session ending: ${reason} (${session_id})`);
-  
+
   try {
     // Check if Cognee is available
-    const healthResponse = await fetch(`${COGNEE_URL}/health`, { 
-      signal: AbortSignal.timeout(2000) 
+    const healthResponse = await fetch(`${COGNEE_URL}/health`, {
+      signal: AbortSignal.timeout(2000)
     });
-    
+
     if (!healthResponse.ok) {
       console.error('[cognee] Cognee unavailable - session not saved');
       console.log(JSON.stringify({
@@ -53,29 +53,29 @@ async function main() {
 
     // Try to read transcript for session summary
     let sessionContent = '';
-    
+
     if (transcript_path && existsSync(transcript_path)) {
       try {
         const transcript = JSON.parse(readFileSync(transcript_path, 'utf-8'));
-        
+
         // Extract key information from transcript
         const messages = transcript.messages || transcript.turns || [];
         if (messages.length > 0) {
           const summaryParts = messages.slice(-10).map((msg, i) => {
             const role = msg.role || 'unknown';
-            const content = typeof msg.content === 'string' 
-              ? msg.content.substring(0, 500) 
+            const content = typeof msg.content === 'string'
+              ? msg.content.substring(0, 500)
               : JSON.stringify(msg.content).substring(0, 500);
             return `[${role}]: ${content}`;
           });
-          
+
           sessionContent = summaryParts.join('\n\n');
         }
       } catch (e) {
         console.error(`[cognee] Could not read transcript: ${e.message}`);
       }
     }
-    
+
     if (!sessionContent) {
       // No transcript - just log a minimal session record
       sessionContent = `Session ${session_id} ended (${reason})`;
@@ -84,7 +84,7 @@ async function main() {
     // Create session record with temporal markers
     const sessionDate = new Date().toISOString().split('T')[0];
     const sessionTime = new Date().toISOString();
-    
+
     const sessionRecord = `Session Record (${sessionDate}):
 Date: ${sessionDate}
 Time: ${sessionTime}
@@ -103,7 +103,7 @@ ${sessionContent}`;
     const formData = new FormData();
     const blob = new Blob([sessionRecord], { type: 'text/plain' });
     formData.append('data', blob, 'session.txt');
-    formData.append('datasetName', config.datasetName || 'default_user');
+    formData.append('datasetName', config.datasetName || 'steve_coding');
     formData.append('node_set', 'sessions');
     formData.append('node_set', 'conversations');
     formData.append('node_set', `session_${sessionDate.replace(/-/g, '_')}`);
@@ -126,7 +126,7 @@ ${sessionContent}`;
         method: 'POST',
         headers: cognifyHeaders,
         body: JSON.stringify({
-          datasets: [config.datasetName || 'default_user'],
+          datasets: [config.datasetName || 'steve_coding'],
           temporal_cognify: true,
         }),
         signal: AbortSignal.timeout(5000),
@@ -140,7 +140,7 @@ ${sessionContent}`;
       console.error(`[cognee] Failed to save session: ${addResponse.status}`);
       console.log(JSON.stringify({}));
     }
-    
+
   } catch (error) {
     console.error(`[cognee] Save error: ${error.message}`);
     console.log(JSON.stringify({}));

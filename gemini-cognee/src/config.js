@@ -30,7 +30,7 @@ const CONFIG_PATH = join(CONFIG_DIR, 'config.json');
 /** @type {CogneeConfig} */
 const DEFAULT_CONFIG = {
   cogneeUrl: 'http://localhost:8000',
-  datasetName: 'default_user',  // Shared dataset name (same as opencode-cognee)
+  datasetName: 'steve_coding',  // Shared dataset name (same as opencode-cognee)
   similarityThreshold: 0.7,
   maxMemories: 5,
   keywordPatterns: ['remember', 'note', 'save this', 'important', "don't forget", 'keep in mind'],

@@ -196,8 +196,16 @@ async def search(
 
     # Transform string based datasets to UUID - String based datasets can only be found for current user
     if datasets is not None and [all(isinstance(dataset, str) for dataset in datasets)]:
-        datasets = await get_authorized_existing_datasets(datasets, "read", user)
-        datasets = [dataset.id for dataset in datasets]
+        from cognee.context_global_variables import backend_access_control_enabled
+
+        if backend_access_control_enabled():
+            datasets = await get_authorized_existing_datasets(datasets, "read", user)
+            datasets = [dataset.id for dataset in datasets]
+        else:
+            # When access control is disabled, just resolve dataset names to IDs
+            from cognee.modules.data.methods.get_dataset_ids import get_dataset_ids
+
+            datasets = await get_dataset_ids(datasets, user)
 
     filtered_search_results = await search_function(
         query_text=query_text,

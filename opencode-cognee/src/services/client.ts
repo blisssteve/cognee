@@ -66,7 +66,7 @@ export class CogneeClient {
    */
   async addMemory(
     content: string,
-    datasetName: string = 'default_user',
+    datasetName: string = 'steve_coding',
     nodeSets?: string[]
   ): Promise<AddResponse> {
     // Create a Blob from the content to simulate a file upload
@@ -117,7 +117,7 @@ export class CogneeClient {
    * @param options.temporalCognify - Enable temporal mode for time-aware queries
    */
   async cognify(
-    datasetName: string = 'default_user',
+    datasetName: string = 'steve_coding',
     options: { useCustomOntology?: boolean; temporalCognify?: boolean } = {}
   ): Promise<AddResponse> {
     const { useCustomOntology = false, temporalCognify = true } = options;

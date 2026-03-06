@@ -149,9 +149,9 @@ export const CogneePlugin = async ({ project, client, $, directory, worktree }) 
           try {
             // Use configured search type for memory injection (default: CHUNKS for fast startup)
             const memories = await cogneeClient.searchMemories(
-              userMessage, 
-              config.injection.searchType, 
-              config.injection.topK, 
+              userMessage,
+              config.injection.searchType,
+              config.injection.topK,
               input.sessionID
             );
 
@@ -270,7 +270,7 @@ ${relevantMemories}
                 // Use provided searchType or default to GRAPH_COMPLETION
                 const searchType = args.searchType || 'GRAPH_COMPLETION';
                 const topK = args.topK || 10;
-                
+
                 // Pass session ID for conversational context
                 const sessionId = context?.sessionID;
                 const results = await cogneeClient.searchMemories(args.query, searchType, topK, sessionId);
@@ -338,11 +338,11 @@ ${relevantMemories}
                 }
 
                 // Parse NodeSet tags from comma-separated string
-                const nodeSets = args.tags 
+                const nodeSets = args.tags
                   ? args.tags.split(',').map((t: string) => t.trim()).filter((t: string) => t.length > 0)
                   : ['user_memories']; // Default NodeSet for manually added memories
 
-                const addResult = await cogneeClient.addMemory(args.content, 'default_user', nodeSets);
+                const addResult = await cogneeClient.addMemory(args.content, 'steve_coding', nodeSets);
 
                 if (!addResult.success) {
                   return JSON.stringify({
@@ -432,11 +432,11 @@ ${formattedConversation}`;
 
               // Use NodeSets to organize session data
               const sessionNodeSets = ['sessions', 'conversations', `session_${sessionDate.replace(/-/g, '_')}`];
-              const addResult = await cogneeClient.addMemory(sessionContext, 'default_user', sessionNodeSets);
+              const addResult = await cogneeClient.addMemory(sessionContext, 'steve_coding', sessionNodeSets);
 
               if (addResult.success) {
                 // Use temporal cognify for time-aware knowledge extraction
-                await cogneeClient.cognify('default_user', { temporalCognify: true });
+                await cogneeClient.cognify('steve_coding', { temporalCognify: true });
                 showToast?.("Session saved to memory", "success");
               }
             } catch (error) {
