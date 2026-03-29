@@ -2,7 +2,7 @@ import base64
 import litellm
 import logging
 import instructor
-from typing import Type
+from typing import Any, Dict, Type, Optional
 from openai import OpenAI
 from pydantic import BaseModel
 
@@ -56,6 +56,7 @@ class OllamaAPIAdapter(LLMInterface):
         vision_model: str = None,
         vision_endpoint: str = None,
         vision_api_key: str = None,
+        llm_args: Optional[Dict[str, Any]] = None,
     ):
         self.name = name
         self.model = model
@@ -65,6 +66,7 @@ class OllamaAPIAdapter(LLMInterface):
         self.vision_model = vision_model if vision_model else model
         self.vision_endpoint = vision_endpoint if vision_endpoint else endpoint
         self.vision_api_key = vision_api_key if vision_api_key else api_key
+        self.llm_args = llm_args or {}
 
         self.instructor_mode = instructor_mode if instructor_mode else self.default_instructor_mode
 
@@ -104,6 +106,7 @@ class OllamaAPIAdapter(LLMInterface):
 
             - BaseModel: A structured output that conforms to the specified response model.
         """
+        merged_kwargs = {**self.llm_args, **kwargs}
         async with llm_rate_limiter_context_manager():
             response = self.aclient.chat.completions.create(
                 model=self.model,
@@ -119,6 +122,7 @@ class OllamaAPIAdapter(LLMInterface):
                 ],
                 max_retries=2,
                 response_model=response_model,
+                **merged_kwargs,
             )
 
         return response

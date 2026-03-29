@@ -3,6 +3,7 @@ import os
 from typing import Any, List, Optional, Tuple, Type
 from cognee.infrastructure.llm.LLMGateway import LLMGateway
 from cognee.infrastructure.llm.prompts import render_prompt, read_query_prompt
+from cognee.modules.observability import new_span, COGNEE_RESULT_SUMMARY
 
 
 def _get_search_llm_override():
@@ -101,11 +102,19 @@ async def generate_completion(
             override_config=override_config,
         )
 
-    return await LLMGateway.acreate_structured_output(
-        text_input=user_prompt,
-        system_prompt=system_prompt,
-        response_model=response_model,
-    )
+    with new_span("cognee.llm.completion") as span:
+        span.set_attribute("cognee.llm.prompt_path", system_prompt_path)
+        span.set_attribute("cognee.llm.context_length", len(context))
+        span.set_attribute("cognee.llm.query_length", len(query))
+        result = await LLMGateway.acreate_structured_output(
+            text_input=user_prompt,
+            system_prompt=system_prompt,
+            response_model=response_model,
+        )
+        if isinstance(result, str):
+            span.set_attribute("cognee.llm.response_length", len(result))
+        span.set_attribute(COGNEE_RESULT_SUMMARY, "LLM completion generated")
+        return result
 
 
 async def generate_completion_batch(
@@ -237,8 +246,14 @@ async def summarize_text(
     """Summarizes text using LLM with the specified prompt."""
     system_prompt = system_prompt if system_prompt else read_query_prompt(system_prompt_path)
 
-    return await LLMGateway.acreate_structured_output(
-        text_input=text,
-        system_prompt=system_prompt,
-        response_model=str,
-    )
+    with new_span("cognee.llm.summarize") as span:
+        span.set_attribute("cognee.llm.input_length", len(text))
+        result = await LLMGateway.acreate_structured_output(
+            text_input=text,
+            system_prompt=system_prompt,
+            response_model=str,
+        )
+        if isinstance(result, str):
+            span.set_attribute("cognee.llm.response_length", len(result))
+        span.set_attribute(COGNEE_RESULT_SUMMARY, "Text summarized")
+        return result

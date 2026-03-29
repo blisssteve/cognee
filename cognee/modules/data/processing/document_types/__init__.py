@@ -6,3 +6,4 @@ from .AudioDocument import AudioDocument
 from .UnstructuredDocument import UnstructuredDocument
 from .CsvDocument import CsvDocument
 from .DoclingDocument import DoclingDocument
+from .DltRowDocument import DltRowDocument

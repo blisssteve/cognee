@@ -4,7 +4,7 @@ import base64
 import mimetypes
 import litellm
 import instructor
-from typing import Type, Optional
+from typing import Any, Dict, Type, Optional
 from pydantic import BaseModel
 from openai import ContentFilterFinishReasonError
 from litellm.exceptions import ContentPolicyViolationError
@@ -33,6 +33,25 @@ from cognee.infrastructure.llm.structured_output_framework.litellm_instructor.ll
 
 logger = get_logger()
 observe = get_observe()
+
+
+def _enrich_llm_span(model: str, name: str) -> None:
+    """Set LLM attributes on the current OTEL span, if tracing is enabled."""
+    from cognee.modules.observability.trace_context import is_tracing_enabled
+
+    if not is_tracing_enabled():
+        return
+
+    try:
+        from opentelemetry import trace as otel_trace
+        from cognee.modules.observability.tracing import COGNEE_LLM_MODEL, COGNEE_LLM_PROVIDER
+
+        current_span = otel_trace.get_current_span()
+        if current_span and current_span.is_recording():
+            current_span.set_attribute(COGNEE_LLM_MODEL, model)
+            current_span.set_attribute(COGNEE_LLM_PROVIDER, name)
+    except Exception:
+        pass
 
 
 class GenericAPIAdapter(LLMInterface):
@@ -68,6 +87,7 @@ class GenericAPIAdapter(LLMInterface):
         vision_model: str = None,
         vision_endpoint: str = None,
         vision_api_key: str = None,
+        llm_args: Optional[Dict[str, Any]] = None,
     ):
         self.name = name
         self.model = model
@@ -83,6 +103,7 @@ class GenericAPIAdapter(LLMInterface):
         self.vision_model = vision_model if vision_model else model  # Fall back to main model
         self.vision_endpoint = vision_endpoint if vision_endpoint else endpoint  # Fall back to main endpoint
         self.vision_api_key = vision_api_key if vision_api_key else api_key  # Fall back to main API key
+        self.llm_args = llm_args or {}
 
         self.instructor_mode = instructor_mode if instructor_mode else self.default_instructor_mode
 
@@ -126,9 +147,10 @@ class GenericAPIAdapter(LLMInterface):
               output from the language model.
         """
 
+        merged_kwargs = {**self.llm_args, **kwargs}
         try:
             async with llm_rate_limiter_context_manager():
-                return await self.aclient.chat.completions.create(
+                result = await self.aclient.chat.completions.create(
                     model=self.model,
                     messages=[
                         {
@@ -144,7 +166,10 @@ class GenericAPIAdapter(LLMInterface):
                     api_key=self.api_key,
                     api_base=self.endpoint,
                     response_model=response_model,
+                    **merged_kwargs,
                 )
+                _enrich_llm_span(self.model, self.name)
+                return result
         except (
             ContentFilterFinishReasonError,
             ContentPolicyViolationError,
@@ -179,6 +204,7 @@ class GenericAPIAdapter(LLMInterface):
                         api_key=self.fallback_api_key,
                         api_base=self.fallback_endpoint,
                         response_model=response_model,
+                        **merged_kwargs,
                     )
             except (
                 ContentFilterFinishReasonError,
