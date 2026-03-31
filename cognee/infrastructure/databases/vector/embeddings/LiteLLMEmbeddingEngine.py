@@ -28,6 +28,10 @@ from cognee.infrastructure.llm.tokenizer.TikToken import (
     TikTokenTokenizer,
 )
 from cognee.shared.rate_limiting import embedding_rate_limiter_context_manager
+from cognee.infrastructure.databases.vector.embeddings.utils import (
+    sanitize_embedding_text_inputs,
+    handle_embedding_response,
+)
 
 litellm.set_verbose = False
 logger = get_logger("LiteLLMEmbeddingEngine")
@@ -123,24 +127,20 @@ class LiteLLMEmbeddingEngine(EmbeddingEngine):
 
             - List[List[float]]: A list of vectors representing the embedded texts.
         """
+
+        sanitized_text_input = sanitize_embedding_text_inputs(text)
+
         try:
-            # Filter out empty strings - Gemini and other providers return errors for empty text
-            non_empty_text = [t for t in text if t and t.strip()]
-            if not non_empty_text:
-                logger.warning("All input texts are empty, returning zero vectors")
-                return [[0.0] * self.dimensions for _ in text]
-
-            # Track which indices had non-empty text
-            non_empty_indices = [i for i, t in enumerate(text) if t and t.strip()]
-
             if self.mock:
-                response = {"data": [{"embedding": [0.0] * self.dimensions} for _ in non_empty_text]}
-                embeddings = [data["embedding"] for data in response["data"]]
+                response = {
+                    "data": [{"embedding": [0.0] * self.dimensions} for _ in sanitized_text_input]
+                }
+                return [data["embedding"] for data in response["data"]]
             else:
                 async with embedding_rate_limiter_context_manager():
                     embedding_kwargs = {
                         "model": self.model,
-                        "input": non_empty_text,
+                        "input": sanitized_text_input,
                         "api_key": self.api_key,
                         "api_base": self.endpoint,
                         "api_version": self.api_version,
@@ -158,14 +158,8 @@ class LiteLLMEmbeddingEngine(EmbeddingEngine):
                         timeout=30.0,
                     )
 
-                embeddings = [data["embedding"] for data in response.data]
-
-            # Reconstruct result with zero vectors for empty inputs
-            result = [[0.0] * self.dimensions for _ in text]
-            for idx, emb in zip(non_empty_indices, embeddings):
-                result[idx] = emb
-            return result
-
+                embedding_response = [data["embedding"] for data in response.data]
+                return handle_embedding_response(text, embedding_response, self.dimensions)
         except litellm.exceptions.ContextWindowExceededError as error:
             if isinstance(text, list) and len(text) > 1:
                 mid = math.ceil(len(text) / 2)
